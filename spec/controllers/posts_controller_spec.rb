@@ -5,9 +5,16 @@ RSpec.describe PostsController, type: :controller do
   let(:valid_attributes) {
     {text: 'test_text', published: true}
   }
+
   
-  before do
+  
+  before(:context) do
     create_list(:post,10)
+  end
+
+  after(:all) do
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.clean
   end
   
   describe "GET #index" do
@@ -51,9 +58,13 @@ RSpec.describe PostsController, type: :controller do
       end
   
       context "with invalid params" do
+        let(:invalid_attributes) {
+          {text: nil, published: true}
+        }
+        
         it "renders a JSON response with errors for the new post" do
       
-          post :create, params: {post: invalid_attributes}, session: valid_session
+          post :create, params: {post: invalid_attributes}
           expect(response).to have_http_status(:unprocessable_entity)
           expect(response.content_type).to eq('application/json')
         end
@@ -61,8 +72,10 @@ RSpec.describe PostsController, type: :controller do
     end
     
     context "unlogged" do
-      post :create, params: {post: invalid_attributes}, session: valid_session
-      expect(response).to have_http_status(401)
+      it "return unauth error" do
+        post :create, params: {post: valid_attributes}
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
@@ -75,11 +88,11 @@ RSpec.describe PostsController, type: :controller do
       end
       context "with valid params" do
         let(:new_attributes) {
-          skip("Add a hash of attributes valid for your model")
+          {text: 'some new text'}
         }
         it "updates the requested post" do
           post = create(:post, user_id: @user)
-          put :update, params: {id: post.to_param, post: new_attributes}, session: valid_session
+          put :update, params: {id: post.to_param, post: new_attributes}
           post.reload
           skip("Add assertions for updated state")
         end
@@ -87,34 +100,39 @@ RSpec.describe PostsController, type: :controller do
         it "renders a JSON response with the post" do
           post = Post.create! valid_attributes
   
-          put :update, params: {id: post.to_param, post: valid_attributes}, session: valid_session
+          put :update, params: {id: post.to_param, post: valid_attributes}
           expect(response).to have_http_status(:ok)
           expect(response.content_type).to eq('application/json')
         end
   
   
         it 'raise error when updating not own post' do
-          put :update, params: {id: post.first.id, post: valid_attributes}, session: valid_session
+          put :update, params: {id: post.first.id, post: valid_attributes}
           expect(response).to have_http_status(:unprocessable_entity)
           expect(response.content_type).to eq('application/json')
         end
     end
 
     end
-
+    
     context "with invalid params" do
+      let(:invalid_attributes) {
+        {text: nil, published: true}
+      }
       it "renders a JSON response with errors for the post" do
         post = Post.create! valid_attributes
 
-        put :update, params: {id: post.to_param, post: invalid_attributes}, session: valid_session
+        put :update, params: {id: post.to_param, post: invalid_attributes}
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.content_type).to eq('application/json')
       end
     end
     
     context "unlogged" do
-      put :update, params: {id: Post.last.id}
-      expect(response).to have_http_status(401)
+      it 'return auth error' do
+        put :update, params: {id: Post.last.id}
+        expect(response).to have_http_status(401)
+      end
     end
   end
 
@@ -140,8 +158,10 @@ RSpec.describe PostsController, type: :controller do
       
     end
     context "unlogged" do
-      delete :destroy, params: {id: post.to_param}
-      expect(response).to have_http_status(401)
+      it 'return auth_error' do
+        delete :destroy, params: {id: post.to_param}
+        expect(response).to have_http_status(401)
+      end
     end
   end
 

@@ -7,7 +7,7 @@ RSpec.describe Tag, type: :model do
   end
   
   before do
-    @tag = create(:post)
+    @tag = create(:tag)
   end
   
   it 'should create post' do
@@ -18,5 +18,11 @@ RSpec.describe Tag, type: :model do
     @tag.name = nil
     @tag.should_not be_valid
     @tag.errors[:name].should_not be_nil
+  end
+  
+  it 'have unique name' do
+    new_tag = create(:tag, {name: @tag.name})
+    new_tag.should_not be_valid
+    new_tag.errors[:name].should_not be_nil
   end
 end
