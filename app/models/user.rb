@@ -5,7 +5,6 @@ class User < ActiveRecord::Base
          :recoverable, :rememberable, :trackable, :validatable
   include DeviseTokenAuth::Concerns::User
   
-  has_many :coments
+  has_many :coments, class_name: 'Coments'
   has_many :posts
-  has_and_belongs_to_many :tags
 end

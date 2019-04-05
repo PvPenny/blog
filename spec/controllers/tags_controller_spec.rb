@@ -49,7 +49,6 @@ RSpec.describe TagsController, type: :controller do
       expect(response).to be_successful
       posts = JSON.parse(response.body)
       expect(posts).to be_an(Array)
-      expect(posts).to all(be_an(Post))
       posts.count.should eql 5
     end
   end

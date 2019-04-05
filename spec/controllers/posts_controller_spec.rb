@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe PostsController, type: :controller do
   
   let(:valid_attributes) {
-    {text: 'test_text', published: true}
+    {text: 'test_text', published: true, tags: ['test tag 1', 'test tag 2']}
   }
 
   
@@ -25,6 +25,23 @@ RSpec.describe PostsController, type: :controller do
       body = JSON.parse(response.body)
       expect(body.count).to eql 5
     end
+
+    it "order by created_at" do
+      get :index, params: {}
+      expect(response).to be_successful
+      body = JSON.parse(response.body)
+      body.each_with_index do |post, index|
+        expect(post['date']).to be > body[index+1]['date'] if body[index+1].present?
+      end
+    end
+    
+    it 'return only published posts' do
+      create_list(:post, 10, published: false)
+      get :index, params: {}
+      expect(response).to be_successful
+      body = JSON.parse(response.body)
+      expect(body.map{|post| post['published']}).to all(be_truthy)
+    end
   end
 
   describe "GET #show" do
@@ -38,14 +55,26 @@ RSpec.describe PostsController, type: :controller do
   describe "POST #create" do
     context "logged" do
       before do
-        user = create(:user)
-        request.headers.merge!(user.create_new_auth_token)
+        @user = User.last
+        request.headers.merge!(@user.create_new_auth_token)
       end
       context "with valid params" do
         it "creates a new Post" do
           expect {
             post :create, params: {post: valid_attributes}
           }.to change(Post, :count).by(1)
+        end
+
+        it "create tags" do
+          expect {
+            post :create, params: {post: valid_attributes}
+          }.to change(Tag, :count).by(2)
+        end
+        
+        it 'creates post for user' do
+          expect {
+            post :create, params: {post: valid_attributes}
+          }.to change(@user.posts, :count).by(1)
         end
         
         it "renders a JSON response with the new post" do
@@ -91,43 +120,41 @@ RSpec.describe PostsController, type: :controller do
           {text: 'some new text'}
         }
         it "updates the requested post" do
-          post = create(:post, user_id: @user)
+          post = create(:post, user_id: @user.id)
           put :update, params: {id: post.to_param, post: new_attributes}
           post.reload
-          skip("Add assertions for updated state")
+          expect(post.text).to eq new_attributes[:text]
         end
   
         it "renders a JSON response with the post" do
-          post = Post.create! valid_attributes
-  
+          post = create(:post, user_id: @user.id)
           put :update, params: {id: post.to_param, post: valid_attributes}
           expect(response).to have_http_status(:ok)
           expect(response.content_type).to eq('application/json')
         end
-  
-  
+        
         it 'raise error when updating not own post' do
-          put :update, params: {id: post.first.id, post: valid_attributes}
+          expect{
+            put :update, params: {id: Post.first.id, post: valid_attributes}
+          }.to raise_error
+        end
+      end
+
+    
+      context "with invalid params" do
+        let(:invalid_attributes) {
+          {text: nil, published: true}
+        }
+        it "renders a JSON response with errors for the post" do
+          post = create(:post, user_id: @user.id)
+          put :update, params: {id: post.to_param, post: invalid_attributes}
           expect(response).to have_http_status(:unprocessable_entity)
           expect(response.content_type).to eq('application/json')
         end
-    end
-
-    end
-    
-    context "with invalid params" do
-      let(:invalid_attributes) {
-        {text: nil, published: true}
-      }
-      it "renders a JSON response with errors for the post" do
-        post = Post.create! valid_attributes
-
-        put :update, params: {id: post.to_param, post: invalid_attributes}
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.content_type).to eq('application/json')
       end
     end
-    
+
+
     context "unlogged" do
       it 'return auth error' do
         put :update, params: {id: Post.last.id}
@@ -152,14 +179,15 @@ RSpec.describe PostsController, type: :controller do
       end
 
       it "raise error when delete not own post" do
-        delete :destroy, params: {id: Post.first.id}
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect{
+          delete :destroy, params: {id: Post.first.id, post: valid_attributes}
+        }.to raise_error
       end
       
     end
     context "unlogged" do
       it 'return auth_error' do
-        delete :destroy, params: {id: post.to_param}
+        delete :destroy, params: {id: Post.first.to_param}
         expect(response).to have_http_status(401)
       end
     end

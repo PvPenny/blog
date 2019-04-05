@@ -21,7 +21,7 @@ RSpec.describe Tag, type: :model do
   end
   
   it 'have unique name' do
-    new_tag = create(:tag, {name: @tag.name})
+    new_tag = Tag.new(name: @tag.name)
     new_tag.should_not be_valid
     new_tag.errors[:name].should_not be_nil
   end

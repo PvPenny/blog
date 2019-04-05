@@ -12,19 +12,19 @@ RSpec.describe TagsController, type: :routing do
 
 
     it "routes to #create" do
-      expect(:post => "/tags").to route_to("tags#create")
+      expect(:post => "/tags").not_to be_routable
     end
 
     it "routes to #update via PUT" do
-      expect(:put => "/tags/1").to route_to("tags#update", :id => "1")
+      expect(:put => "/tags/1").not_to be_routable
     end
 
     it "routes to #update via PATCH" do
-      expect(:patch => "/tags/1").to route_to("tags#update", :id => "1")
+      expect(:patch => "/tags/1").not_to be_routable
     end
 
     it "routes to #destroy" do
-      expect(:delete => "/tags/1").to route_to("tags#destroy", :id => "1")
+      expect(:delete => "/tags/1").not_to be_routable
     end
   end
 end
