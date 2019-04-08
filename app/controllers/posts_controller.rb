@@ -3,7 +3,12 @@ class PostsController < ApplicationController
   before_action :set_post, only: [:update, :destroy]
   # GET /posts
   def index
-    posts = Post.published.ordered.page(params[:page]).per(5).map{|post| post.show}
+    if params[:user_posts]
+      posts = current_user.posts
+    else
+      posts = Post.all
+    end
+    posts = posts.published.ordered.page(params[:page]).per(5).map{|post| post.show}
     render json: posts
   end
 
@@ -46,7 +51,7 @@ class PostsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def post_params
-      params.require(:post).permit(:text, :published, tags: [])
+      params.require(:post).permit(:text, :published, :publish_date, tags: [])
     end
     
     

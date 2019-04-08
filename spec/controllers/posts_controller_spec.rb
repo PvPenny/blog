@@ -31,7 +31,7 @@ RSpec.describe PostsController, type: :controller do
       expect(response).to be_successful
       body = JSON.parse(response.body)
       body.each_with_index do |post, index|
-        expect(post['date']).to be > body[index+1]['date'] if body[index+1].present?
+        expect(post['date']).to be >= body[index+1]['date'] if body[index+1].present?
       end
     end
     
@@ -42,7 +42,24 @@ RSpec.describe PostsController, type: :controller do
       body = JSON.parse(response.body)
       expect(body.map{|post| post['published']}).to all(be_truthy)
     end
-  end
+
+    context 'logged' do
+      before do
+        @user = User.first
+        request.headers.merge!(@user.create_new_auth_token)
+      end
+      
+      it "order by created_at" do
+        get :index, params: {user_posts: true}
+        expect(response).to be_successful
+        body = JSON.parse(response.body)
+        body.each do |post|
+          expect(post['username']).to eql(@user.nickname)
+        end
+      end
+    end
+
+    end
 
   describe "GET #show" do
     it "returns a success response" do

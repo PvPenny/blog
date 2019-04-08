@@ -5,18 +5,17 @@ class Post < ApplicationRecord
 
   validates :text, presence: true
   scope :published, ->{ where(published: true)}
-  scope :ordered, ->{ order(created_at: :desc)}
+  scope :ordered, ->{ order(publish_date: :desc)}
   
   def self.prepare_for_index posts
     posts.map{|post| post.show}
-    
   end
-
+  
   def show
     {
       id: self.id,
       text: self.text,
-      date: self.created_at,
+      date: self.publish_date,
       username: self.user.nickname,
       published: self.published
     }
